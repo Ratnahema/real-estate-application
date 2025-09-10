@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
+import { Menu, X } from 'lucide-react'; // Import hamburger and close icons
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,6 +20,7 @@ const Navbar = () => {
     try {
       await signOut(auth);
       navigate('/');
+      setIsMenuOpen(false);
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -33,6 +35,20 @@ const Navbar = () => {
     setIsMenuOpen(false);
   };
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isMenuOpen && !event.target.closest('.nav-container')) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
   return (
     <nav style={navStyle}>
       <div style={navContainerStyle} className="nav-container">
@@ -43,10 +59,10 @@ const Navbar = () => {
             <span style={logoTextStyle} className="logo-text">PropBot</span>
           </Link>
           
-          {/* Navigation Menu */}
+          {/* Desktop Navigation Menu */}
           <div 
             style={menuStyle} 
-            className={`nav-menu ${isMenuOpen ? 'open' : ''}`}
+            className="desktop-menu"
           >
             <Link to="/" style={navLinkStyle} className="nav-link" onClick={handleLinkClick}>Home</Link>
             <Link to="/properties" style={navLinkStyle} className="nav-link" onClick={handleLinkClick}>Buy</Link>
@@ -57,7 +73,7 @@ const Navbar = () => {
           </div>
           
           {/* Right side - Login/Logout based on user state */}
-          <div style={rightSectionStyle}>
+          <div style={rightSectionStyle} className="desktop-auth">
             {currentUser ? (
               <div style={userSectionStyle}>
                 <span style={userWelcomeStyle} className="user-welcome">
@@ -88,11 +104,47 @@ const Navbar = () => {
             className="hamburger-btn"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            <span style={hamburgerLineStyle}></span>
-            <span style={hamburgerLineStyle}></span>
-            <span style={hamburgerLineStyle}></span>
+            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div style={mobileMenuStyle}>
+            <div style={mobileMenuContentStyle}>
+              <Link to="/" style={mobileNavLinkStyle} onClick={handleLinkClick}>Home</Link>
+              <Link to="/properties" style={mobileNavLinkStyle} onClick={handleLinkClick}>Buy</Link>
+              <Link to="/rent" style={mobileNavLinkStyle} onClick={handleLinkClick}>Rent</Link>
+              <Link to="/sell" style={mobileNavLinkStyle} onClick={handleLinkClick}>Sell</Link>
+              <Link to="/about" style={mobileNavLinkStyle} onClick={handleLinkClick}>About Us</Link>
+              <Link to="/contact" style={mobileNavLinkStyle} onClick={handleLinkClick}>Contact Us</Link>
+              
+              {/* Mobile Auth Section */}
+              <div style={mobileAuthSectionStyle}>
+                {currentUser ? (
+                  <>
+                    <div style={mobileUserWelcomeStyle}>
+                      Welcome, {currentUser.displayName || currentUser.email}
+                    </div>
+                    <button 
+                      onClick={handleLogout} 
+                      style={mobileLogoutButtonStyle}
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={handleLoginClick}
+                    style={mobileLoginButtonStyle}
+                  >
+                    Login / Register
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
@@ -113,12 +165,14 @@ const navContainerStyle = {
   maxWidth: '1200px',
   margin: '0 auto',
   padding: '0 20px',
+  position: 'relative',
 };
 
 const navContentStyle = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  position: 'relative',
 };
 
 const logoStyle = {
@@ -126,6 +180,7 @@ const logoStyle = {
   alignItems: 'center',
   gap: '8px',
   textDecoration: 'none',
+  zIndex: 101,
 };
 
 const logoIconStyle = {
@@ -212,19 +267,106 @@ const arrowStyle = {
 
 const hamburgerStyle = {
   display: 'none',
-  flexDirection: 'column',
   backgroundColor: 'transparent',
   border: 'none',
   cursor: 'pointer',
-  gap: '3px',
   padding: '8px',
+  zIndex: 101,
 };
 
-const hamburgerLineStyle = {
-  width: '20px',
-  height: '2px',
-  backgroundColor: '#333',
-  transition: 'all 0.3s',
+const mobileMenuStyle = {
+  position: 'absolute',
+  top: '100%',
+  left: 0,
+  right: 0,
+  backgroundColor: '#ffffff',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+  zIndex: 100,
 };
+
+const mobileMenuContentStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  padding: '20px',
+};
+
+const mobileNavLinkStyle = {
+  color: '#666',
+  textDecoration: 'none',
+  fontSize: '16px',
+  fontWeight: '500',
+  padding: '12px 0',
+  borderBottom: '1px solid #f0f0f0',
+};
+
+const mobileAuthSectionStyle = {
+  marginTop: '20px',
+  paddingTop: '20px',
+  borderTop: '1px solid #e5e5e5',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '15px',
+};
+
+const mobileUserWelcomeStyle = {
+  fontSize: '14px',
+  color: '#666',
+  textAlign: 'center',
+  marginBottom: '10px',
+};
+
+const mobileLoginButtonStyle = {
+  padding: '12px 20px',
+  backgroundColor: '#2c5aa0',
+  color: 'white',
+  border: 'none',
+  borderRadius: '6px',
+  fontSize: '16px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  width: '100%',
+};
+
+const mobileLogoutButtonStyle = {
+  padding: '12px 20px',
+  backgroundColor: '#dc3545',
+  color: 'white',
+  border: 'none',
+  borderRadius: '6px',
+  fontSize: '16px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  width: '100%',
+};
+
+// Media queries for responsive design
+const mediaQuery = `@media (max-width: 768px) {
+  .desktop-menu {
+    display: none !important;
+  }
+  
+  .desktop-auth {
+    display: none !important;
+  }
+  
+  .hamburger-btn {
+    display: flex !important;
+  }
+  
+  .nav-container {
+    padding: 0 15px;
+  }
+}
+
+@media (min-width: 769px) {
+  .hamburger-btn {
+    display: none !important;
+  }
+}`;
+
+// Add styles to document head
+const styleSheet = document.createElement('style');
+styleSheet.innerText = mediaQuery;
+document.head.appendChild(styleSheet);
 
 export default Navbar;
